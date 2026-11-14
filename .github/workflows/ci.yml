@@ -63,7 +63,7 @@ jobs:
             -scheme CellAnalyzer \
             -destination "id=$UDID" \
             -resultBundlePath TestResults.xcresult > uitest.log 2>&1 || status=$?
-          grep -E "error:|Test Case|\*\* TEST" uitest.log | tail -40 || true
+          grep -E "error:|Test Case|\*\* TEST|TOUR:" uitest.log | tail -120 || true
           mkdir -p screenshots
           xcrun xcresulttool export attachments --path TestResults.xcresult --output-path screenshots || true
           # Rename exported files to their attachment names (e.g. 1-Live.png).
@@ -72,8 +72,11 @@ jobs:
           manifest = json.load(open("screenshots/manifest.json"))
           for test in manifest:
               for a in test.get("attachments", []):
+                  path = os.path.join("screenshots", a["exportedFileName"])
+                  if not a["exportedFileName"].endswith(".png"):
+                      continue
                   name = a["suggestedHumanReadableName"].split("_0_")[0] + ".png"
-                  os.rename(os.path.join("screenshots", a["exportedFileName"]), os.path.join("screenshots", name))
+                  os.rename(path, os.path.join("screenshots", name))
           PY
           ls screenshots
           exit $status

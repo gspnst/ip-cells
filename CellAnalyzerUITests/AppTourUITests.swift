@@ -15,20 +15,29 @@ final class AppTourUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Live"].waitForExistence(timeout: 10))
         snapshot("1-Live")
 
-        app.tabBars.buttons["Cells"].tap()
-        let firstCell = app.collectionViews.cells.element(boundBy: 0)
-        XCTAssertTrue(firstCell.waitForExistence(timeout: 5), "cell list is empty")
-        snapshot("2-Cells")
-        sleep(1) // let the tab switch settle before tapping a row
-        firstCell.tap()
-        if !detailIsShown(app) {
-            firstCell.tap()
-        }
-        XCTAssertTrue(detailIsShown(app), "cell detail did not open")
+        // Open a cell from the latest-measurement card on the Live tab.
+        let latestCard = app.buttons["latestCell"]
+        XCTAssertTrue(latestCard.waitForExistence(timeout: 5), "latest measurement card missing")
+        latestCard.tap()
+        XCTAssertTrue(detailIsShown(app), "cell detail did not open from the Live card")
         sleep(1)
         snapshot("3-CellDetail")
         app.swipeUp()
+        app.swipeUp()
         snapshot("4-CellDetail-Location")
+        app.navigationBars.buttons.element(boundBy: 0).tap() // back to Live
+
+        // Open a cell from the Cells list.
+        app.tabBars.buttons["Cells"].tap()
+        let row = app.buttons["cellRow"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "cell list is empty")
+        snapshot("2-Cells")
+        row.tap()
+        let listNavigationWorks = detailIsShown(app)
+        if !listNavigationWorks {
+            for line in app.debugDescription.split(separator: "\n").prefix(80) { print("TOUR: \(line)") }
+        }
+        XCTAssertTrue(listNavigationWorks, "cell detail did not open from the Cells list")
 
         app.tabBars.buttons["Map"].tap()
         sleep(3)

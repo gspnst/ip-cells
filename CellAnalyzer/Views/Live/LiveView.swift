@@ -106,6 +106,7 @@ struct LiveView: View {
                 LatestMeasurementCard(observation: latest)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("latestCell")
         }
     }
 

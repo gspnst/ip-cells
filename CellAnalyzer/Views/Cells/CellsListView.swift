@@ -28,6 +28,7 @@ struct CellsListView: View {
                             NavigationLink(value: cell.key) {
                                 CellRow(cell: cell, gnbIdBits: model.settings.gnbIdBits)
                             }
+                            .accessibilityIdentifier("cellRow")
                         }
                     }
                 }
