@@ -44,12 +44,15 @@ You can also paste text (for example copied with Live Text) or type values in by
   - Unusually strong signal.
   - A cell far from its registered site, or missing from the database.
 - **Export / import**: CSV (spreadsheets), JSON (round-trips back into the app), and KML (Google Earth).
+- **Demo data**: Settings › Load demo data adds a synthetic 40-minute drive, so every screen can be explored in the Simulator, which has no cellular radio.
 - **Privacy**: all data stays on the device. Only an OpenCellID lookup sends anything off the phone, and it sends just the cell identity, never your location.
 
 ## Project layout
 
 ```
 project.yml                      XcodeGen spec for the iOS app
+CellAnalyzerUITests/             UI smoke test: launches with demo data, visits every screen, saves screenshots
+scripts/ocr-screenshots.swift    Prints the text in UI-test screenshots (used in CI)
 CellAnalyzer/                    iOS app (SwiftUI)
   App/                           App entry point and AppModel (object graph and derived analysis)
   Services/                      CoreTelephony, Core Location, NWPathMonitor, Vision OCR, OpenCellID, storage
@@ -85,7 +88,12 @@ Core library tests:
 swift test --package-path Packages/CellAnalyzerCore
 ```
 
-CI (`.github/workflows/ci.yml`) runs those tests on Linux and macOS and builds the app for the iOS Simulator and for devices (unsigned).
+CI (`.github/workflows/ci.yml`):
+- runs those tests on Linux and macOS;
+- builds the app for the iOS Simulator and for devices (unsigned);
+- runs the UI smoke test on a Simulator with demo data, uploads the screenshots as the `app-screenshots` artifact, and prints their recognized text in the job log.
+
+To try the app in the Simulator, launch with the `-demoData` argument, or use Settings › Load demo data.
 
 ## Using Field Test Mode
 
