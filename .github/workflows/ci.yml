@@ -48,6 +48,33 @@ jobs:
       - name: Show compiler errors
         if: failure()
         run: grep -E -A3 "error:" build.log | head -200 || true
+      - name: UI smoke test (Simulator, demo data)
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          runtimes = sorted((k for k in devices if "iOS" in k), reverse=True)
+          print(next(d["udid"] for k in runtimes for d in devices[k] if d["name"].startswith("iPhone")))
+          ')
+          echo "Simulator: $UDID"
+          status=0
+          xcodebuild test \
+            -project CellAnalyzer.xcodeproj \
+            -scheme CellAnalyzer \
+            -destination "id=$UDID" \
+            -resultBundlePath TestResults.xcresult > uitest.log 2>&1 || status=$?
+          grep -E "error:|Test Case|\*\* TEST" uitest.log | tail -40 || true
+          mkdir -p screenshots
+          xcrun xcresulttool export attachments --path TestResults.xcresult --output-path screenshots || true
+          ls screenshots
+          exit $status
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-screenshots
+          path: screenshots
+          if-no-files-found: ignore
       - name: Build app for device (unsigned)
         run: |
           status=0

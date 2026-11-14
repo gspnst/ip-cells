@@ -73,9 +73,20 @@ struct SettingsView: View {
                 if let exportError {
                     Text(exportError).font(.caption).foregroundStyle(.red)
                 }
+                if model.hasDemoData {
+                    Button("Remove demo data") { model.removeDemoData() }
+                } else {
+                    Button {
+                        model.loadDemoData()
+                    } label: {
+                        Label("Load demo data", systemImage: "wand.and.stars")
+                    }
+                }
                 Button("Delete all data", role: .destructive) { confirmDelete = true }
             } header: {
                 Text("Data (\(model.store.observations.count) measurements)")
+            } footer: {
+                Text("Demo data is a synthetic 40-minute drive for trying the app, e.g. in the Simulator, which has no cellular radio.")
             }
 
             Section("Help") {

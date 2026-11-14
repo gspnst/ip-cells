@@ -21,9 +21,13 @@ final class AppModel {
 
     @ObservationIgnored private var recomputeTask: Task<Void, Never>?
 
+    /// Launched with `-demoData` (UI tests, screenshots), the app uses a throwaway store filled with demo data.
     init() {
+        let demo = ProcessInfo.processInfo.arguments.contains("-demoData")
         let settings = AppSettings()
-        let store = ObservationStore()
+        let store = demo
+            ? ObservationStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("demo-store.json"))
+            : ObservationStore()
         let telephony = TelephonyMonitor()
         let location = LocationService()
         self.settings = settings
@@ -38,6 +42,11 @@ final class AppModel {
         store.onChange = { [weak self] in self?.scheduleRecompute() }
         telephony.onRadioChange = { [weak self] _, _ in self?.recorder.handleRadioChange() }
         location.onLocation = { [weak self] fix in self?.recorder.handleLocation(fix) }
+        if demo {
+            settings.hasCompletedOnboarding = true
+            store.deleteAll()
+            store.add(contentsOf: DemoData.session())
+        }
         recompute()
     }
 
@@ -72,6 +81,18 @@ final class AppModel {
         if settings.autoLookup {
             Task { await self.towers.lookUpMissing(cells) }
         }
+    }
+
+    // MARK: Demo data
+
+    var hasDemoData: Bool { store.observations.contains { $0.notes == DemoData.note } }
+
+    func loadDemoData() {
+        store.add(contentsOf: DemoData.session())
+    }
+
+    func removeDemoData() {
+        store.delete(ids: Set(store.observations.filter { $0.notes == DemoData.note }.map(\.id)))
     }
 
     // MARK: Queries

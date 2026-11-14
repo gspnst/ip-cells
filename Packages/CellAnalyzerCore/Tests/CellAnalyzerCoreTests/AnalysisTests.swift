@@ -132,6 +132,27 @@ final class AnalysisTests: XCTestCase {
         XCTAssertTrue(AnomalyDetector().detect(list).isEmpty)
     }
 
+    // MARK: Demo data
+
+    func testDemoDataIsRealistic() {
+        let demo = DemoData.session(start: t0)
+        let again = DemoData.session(start: t0)
+        XCTAssertEqual(demo.map(\.rsrp), again.map(\.rsrp), "deterministic values")
+        XCTAssertEqual(demo.map(\.cellId), again.map(\.cellId))
+        let cells = CellAggregator.aggregate(demo)
+        XCTAssertGreaterThan(cells.count, 6)
+        XCTAssertTrue(cells.contains { $0.family == .nr && $0.bandLabel == "n78" })
+        XCTAssertTrue(cells.contains { $0.family == .lte && $0.bandLabel == "B20" })
+        XCTAssertTrue(demo.allSatisfy { $0.location != nil })
+        let summary = SessionAnalyzer.summarize(demo)
+        XCTAssertGreaterThan(summary.handovers, 3)
+        XCTAssertGreaterThan(summary.fiveGShare, 0.6)
+        let anomalies = AnomalyDetector().detect(demo)
+        XCTAssertTrue(anomalies.contains { $0.kind == .downgradeTo2G })
+        XCTAssertFalse(anomalies.contains { $0.severity == .high }, "\(anomalies.map(\.title))")
+        for o in demo { XCTAssertTrue(o.rsrp.map { SignalMetric.rsrp.plausibleRange.contains($0) } ?? true) }
+    }
+
     // MARK: Export / import
 
     func testCSVExport() {
