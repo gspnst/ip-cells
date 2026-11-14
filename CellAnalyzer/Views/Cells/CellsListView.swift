@@ -115,10 +115,12 @@ struct CellRow: View {
         }
     }
 
+    /// Technical identifiers first so truncation only ever cuts the operator name.
     private var subtitle: String {
-        var parts = [cell.operatorDescription]
+        var parts: [String] = []
         if let pci = cell.pci { parts.append("PCI \(pci)") }
         if let area = cell.areaCode { parts.append((cell.family == .lte || cell.family == .nr ? "TAC " : "LAC ") + String(area)) }
+        parts.append(cell.operatorDescription)
         return parts.joined(separator: " · ")
     }
 }

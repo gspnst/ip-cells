@@ -19,8 +19,12 @@ final class AppTourUITests: XCTestCase {
         let firstCell = app.collectionViews.cells.element(boundBy: 0)
         XCTAssertTrue(firstCell.waitForExistence(timeout: 5), "cell list is empty")
         snapshot("2-Cells")
+        sleep(1) // let the tab switch settle before tapping a row
         firstCell.tap()
-        _ = app.navigationBars.element(boundBy: 0).waitForExistence(timeout: 5)
+        if !detailIsShown(app) {
+            firstCell.tap()
+        }
+        XCTAssertTrue(detailIsShown(app), "cell detail did not open")
         sleep(1)
         snapshot("3-CellDetail")
         app.swipeUp()
@@ -47,6 +51,16 @@ final class AppTourUITests: XCTestCase {
             sleep(1)
             snapshot("9-Import")
         }
+    }
+
+    private func detailIsShown(_ app: XCUIApplication) -> Bool {
+        let titles = ["5G cell", "LTE cell", "UMTS cell", "GSM cell"]
+        let deadline = Date().addingTimeInterval(5)
+        repeat {
+            if titles.contains(where: { app.navigationBars[$0].exists }) { return true }
+            usleep(250_000)
+        } while Date() < deadline
+        return false
     }
 
     private func snapshot(_ name: String) {
