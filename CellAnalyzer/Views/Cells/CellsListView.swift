@@ -62,21 +62,24 @@ struct CellsListView: View {
         if let familyFilter { cells = cells.filter { $0.family == familyFilter } }
         let query = search.trimmingCharacters(in: .whitespaces).lowercased()
         if !query.isEmpty {
-            cells = cells.filter { cell in
-                let haystack = [
-                    cell.title(gnbIdBits: model.settings.gnbIdBits), cell.operatorDescription,
-                    cell.bandLabel ?? "", cell.pci.map { "pci \($0)" } ?? "",
-                    cell.cellId.map(String.init) ?? "", cell.channel.map(String.init) ?? "",
-                    cell.areaCode.map(String.init) ?? "",
-                ].joined(separator: " ").lowercased()
-                return haystack.contains(query)
-            }
+            let bits = model.settings.gnbIdBits
+            cells = cells.filter { searchText(for: $0, gnbIdBits: bits).contains(query) }
         }
         switch sort {
         case .recent: return cells.sorted { $0.lastSeen > $1.lastSeen }
         case .strongest: return cells.sorted { ($0.rsrp?.mean ?? -999) > ($1.rsrp?.mean ?? -999) }
         case .samples: return cells.sorted { $0.observationCount > $1.observationCount }
         }
+    }
+
+    private func searchText(for cell: CellAggregate, gnbIdBits: Int) -> String {
+        var parts: [String] = [cell.title(gnbIdBits: gnbIdBits), cell.operatorDescription]
+        if let band = cell.bandLabel { parts.append(band) }
+        if let pci = cell.pci { parts.append("pci \(pci)") }
+        if let cellId = cell.cellId { parts.append(String(cellId)) }
+        if let channel = cell.channel { parts.append(String(channel)) }
+        if let area = cell.areaCode { parts.append(String(area)) }
+        return parts.joined(separator: " ").lowercased()
     }
 
     private func groupedFamilies(_ cells: [CellAggregate]) -> [RadioFamily] {

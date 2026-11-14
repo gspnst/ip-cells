@@ -165,8 +165,11 @@ struct LiveView: View {
         let service = model.telephony.dataService
         var radio = service?.radio ?? .lte
         if radio == .unknown { radio = .lte }
+        // Pre-fill the network from the most recent capture; iOS no longer exposes MCC/MNC.
+        let previous = model.store.observations.last { $0.mcc != nil }
         return CellObservation(source: .manual, radio: radio, simSlot: service?.label,
-                               mcc: service?.mcc, mnc: service?.mnc, location: model.location.currentPoint)
+                               mcc: previous?.mcc, mnc: previous?.mnc, mncDigits: previous?.mncDigits,
+                               location: model.location.currentPoint)
     }
 }
 
@@ -189,19 +192,19 @@ private struct ServiceCard: View {
             }
             Text(service.radio.explanation)
                 .font(.subheadline).foregroundStyle(.secondary)
-            if let name = service.carrierName {
-                LabeledContent("Carrier", value: name).font(.subheadline)
-            }
-            if let mcc = service.mcc {
-                LabeledContent("Home network", value: OperatorDirectory.describe(mcc: mcc, mnc: service.mnc))
-                    .font(.subheadline)
-            }
             if let changed = model.telephony.lastChange {
                 Text("Last change \(changed, style: .relative) ago")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
         .card()
+    }
+
+    private func subtitle(for cell: CellAggregate) -> String {
+        var parts: [String] = [cell.operatorDescription]
+        if let band = cell.bandLabel { parts.append(band) }
+        if let pci = cell.pci { parts.append("PCI \(pci)") }
+        return parts.joined(separator: " · ")
     }
 }
 
@@ -225,8 +228,7 @@ struct LatestMeasurementCard: View {
             if let cell = model.cell(containing: observation) {
                 Text(cell.title(gnbIdBits: model.settings.gnbIdBits))
                     .font(.title3.weight(.semibold))
-                Text([cell.operatorDescription, cell.bandLabel, cell.pci.map { "PCI \($0)" }]
-                        .compactMap { $0 }.joined(separator: " · "))
+                Text(subtitle(for: cell))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             if observation.hasSignal {
@@ -241,5 +243,12 @@ struct LatestMeasurementCard: View {
             }
         }
         .card()
+    }
+
+    private func subtitle(for cell: CellAggregate) -> String {
+        var parts: [String] = [cell.operatorDescription]
+        if let band = cell.bandLabel { parts.append(band) }
+        if let pci = cell.pci { parts.append("PCI \(pci)") }
+        return parts.joined(separator: " · ")
     }
 }

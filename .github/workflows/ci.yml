@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:6.1-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Test CellAnalyzerCore
         run: swift test --package-path Packages/CellAnalyzerCore
 
@@ -23,7 +23,7 @@ jobs:
     name: iOS app build (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Toolchain
         run: |
           xcodebuild -version

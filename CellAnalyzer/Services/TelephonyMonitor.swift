@@ -9,11 +9,6 @@ struct CellularService: Identifiable, Hashable {
     var id: String
     var radio: RadioTechnology
     var rawRadio: String?
-    /// Carrier details are only available before iOS 16; newer systems return placeholders.
-    var carrierName: String?
-    var mcc: Int?
-    var mnc: Int?
-    var isoCountryCode: String?
     var isDataService: Bool
     /// Position in the list – used to label services "SIM 1", "SIM 2".
     var index: Int
@@ -63,53 +58,27 @@ final class TelephonyMonitor: NSObject {
 
     func refresh() {
         dataServiceIdentifier = networkInfo.dataServiceIdentifier
+        // Carrier name/MCC/MNC (CTCarrier) are not read: since iOS 16 they only return placeholders.
         let rats = networkInfo.serviceCurrentRadioAccessTechnology ?? [:]
-        let carriers = Self.carriers(networkInfo)
-        let ids = Set(rats.keys).union(carriers.keys).sorted()
+        let ids = rats.keys.sorted()
 
         let previous = Dictionary(uniqueKeysWithValues: services.map { ($0.id, $0.radio) })
         var updated: [CellularService] = []
         for (index, id) in ids.enumerated() {
             let raw = rats[id]
-            let carrier = carriers[id]
             updated.append(CellularService(
                 id: id,
                 radio: raw.map(RadioTechnology.init(coreTelephonyIdentifier:)) ?? .unknown,
                 rawRadio: raw,
-                carrierName: carrier?.name,
-                mcc: carrier?.mcc,
-                mnc: carrier?.mnc,
-                isoCountryCode: carrier?.iso,
                 isDataService: id == dataServiceIdentifier,
                 index: index))
         }
-        // Services that lost radio (airplane mode / no coverage) are kept with .unknown above.
         services = updated
 
         for service in updated where previous[service.id] != service.radio {
             lastChange = Date()
             onRadioChange?(service, previous[service.id])
         }
-    }
-
-    private struct CarrierInfo { var name: String?; var mcc: Int?; var mnc: Int?; var iso: String? }
-
-    /// `CTCarrier` is deprecated since iOS 16 and returns "--"/65535 placeholders there;
-    /// placeholder values are filtered out so the UI never shows bogus PLMNs.
-    @available(iOS, deprecated: 16.0)
-    private static func carriers(_ info: CTTelephonyNetworkInfo) -> [String: CarrierInfo] {
-        var result: [String: CarrierInfo] = [:]
-        for (id, carrier) in info.serviceSubscriberCellularProviders ?? [:] {
-            func clean(_ s: String?) -> String? {
-                guard let s, !s.isEmpty, s != "--", s != "65535" else { return nil }
-                return s
-            }
-            result[id] = CarrierInfo(name: clean(carrier.carrierName),
-                                     mcc: clean(carrier.mobileCountryCode).flatMap(Int.init),
-                                     mnc: clean(carrier.mobileNetworkCode).flatMap(Int.init),
-                                     iso: clean(carrier.isoCountryCode)?.uppercased())
-        }
-        return result
     }
 }
 

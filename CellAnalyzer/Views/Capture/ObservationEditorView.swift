@@ -38,9 +38,8 @@ struct ObservationForm: View {
             } header: {
                 Text("Spectrum")
             } footer: {
-                if let info = channelInfo {
-                    Text([info.bandLabel, info.downlinkMHz.map { "DL " + Spectrum.formatFrequency($0) }]
-                            .compactMap { $0 }.joined(separator: " · "))
+                if let summary = channelSummary {
+                    Text(summary)
                 }
             }
 
@@ -93,6 +92,14 @@ struct ObservationForm: View {
         case .umts: return "UARFCN"
         default: return "ARFCN"
         }
+    }
+
+    private var channelSummary: String? {
+        guard let info = channelInfo else { return nil }
+        var parts: [String] = []
+        if let label = info.bandLabel { parts.append(label) }
+        if let dl = info.downlinkMHz { parts.append("DL " + Spectrum.formatFrequency(dl)) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private var channelInfo: ChannelInfo? {

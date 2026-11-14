@@ -80,7 +80,7 @@ final class Recorder {
         for service in telephony.services {
             let observation = CellObservation(
                 timestamp: now, source: .system, radio: service.radio, simSlot: service.label,
-                mcc: service.mcc, mnc: service.mnc, location: point)
+                location: point)
             if force || shouldRecord(observation, previous: lastSample[service.id]) {
                 new.append(observation)
                 lastSample[service.id] = observation

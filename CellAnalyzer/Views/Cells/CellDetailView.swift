@@ -163,7 +163,7 @@ private struct CellDetailContent: View {
         Section("Spectrum") {
             if let info {
                 if let label = info.bandLabel {
-                    InfoRow("Band", [label, info.bandName].compactMap { $0 }.joined(separator: " · "))
+                    InfoRow("Band", info.bandName.map { "\(label) · \($0)" } ?? label)
                 }
                 if !info.alternativeBands.isEmpty {
                     InfoRow("Also matches", info.alternativeBands.map { "n\($0)" }.joined(separator: ", "),
@@ -316,6 +316,13 @@ private struct CellDetailContent: View {
         }
     }
 
+    private func towerSummary(_ tower: TowerLocation) -> String {
+        var text = "found"
+        if let samples = tower.samples { text = "\(samples) samples" }
+        if let range = tower.rangeMeters { text += ", range " + Format.distance(range) }
+        return text
+    }
+
     private func distanceRow(_ label: String, from me: GeoPoint, to target: GeoPoint) -> some View {
         let distance = Geodesy.distance(me, target)
         let bearing = Geodesy.bearing(from: me, to: target)
@@ -326,7 +333,7 @@ private struct CellDetailContent: View {
     private func lookupRow(tower: TowerLocation?) -> some View {
         let towers = model.towers
         if let tower {
-            InfoRow("OpenCellID", "\(tower.samples.map { "\($0) samples" } ?? "found")\(tower.rangeMeters.map { ", range \(Format.distance($0))" } ?? "")")
+            InfoRow("OpenCellID", towerSummary(tower))
         } else if towers.isNotFound(cell.key) {
             InfoRow("OpenCellID", "Not in database")
         }

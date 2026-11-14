@@ -87,7 +87,8 @@ public enum Spectrum {
         return trimmed(mhz, decimals: 3) + " MHz"
     }
 
-    static func trimmed(_ value: Double, decimals: Int) -> String {
+    /// Fixed-decimal formatting with trailing zeros removed ("1815.000" → "1815").
+    public static func trimmed(_ value: Double, decimals: Int) -> String {
         var s = String(format: "%.\(decimals)f", value)
         if s.contains(".") {
             while s.hasSuffix("0") { s.removeLast() }
